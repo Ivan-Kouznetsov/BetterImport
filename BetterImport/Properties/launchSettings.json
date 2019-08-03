@@ -1,7 +1,8 @@
 {
   "profiles": {
     "BetterImport": {
-      "commandName": "Project"
+      "commandName": "Project",
+      "commandLineArgs": "job.json"
     }
   }
 }

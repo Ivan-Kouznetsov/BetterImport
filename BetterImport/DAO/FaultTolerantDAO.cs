@@ -120,14 +120,14 @@ namespace BetterImport.DAO
                     string currentValue = rawValues[columns[i].DataFileIndex - 1] // for 1-indexing
                                          .Replace("'", @"''"); // to escape single quotes
 
-                    if (int.TryParse(currentValue, out _))
+                    if (int.TryParse(currentValue, out _) || currentValue == "NULL")
                     {
                         values[i] = currentValue;
                     }
                     else if (IsUnicode(currentValue))
                     {
                         values[i] = "N'" + currentValue + "'";
-                    }
+                    }                    
                     else
                     {
                         values[i] = "'" + currentValue + "'";

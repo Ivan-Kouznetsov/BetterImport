@@ -127,7 +127,7 @@ namespace BetterImport
             }
 
             // Save last batch
-            SaveAndLog(faultTolerantDAO, job, values, originalLines, out skippedRows);
+            SaveAndLog(faultTolerantDAO, job,values, originalLines, out skippedRows);
 
             // Report progress
             ReportProgress(rowCount, skippedRows.Count);
@@ -135,8 +135,9 @@ namespace BetterImport
             Console.WriteLine("Finished at " + DateTime.Now.ToString());
         }
 
-        private static void SaveAndLog(FaultTolerantDAO faultTolerantDAO, Job job, string[][] values, string[] originalLines, out ReadOnlyCollection<int> skippedRows)
+        private static void SaveAndLog(FaultTolerantDAO faultTolerantDAO, Job job,string[][] values, string[] originalLines, out ReadOnlyCollection<int> skippedRows)
         {
+            Preprocessor.BatchReplace(job.Preprocessors, ref values);
             faultTolerantDAO.SaveBatch(job.TableName, job.Columns, values, out skippedRows, out ReadOnlyCollection<Exception> exceptions);
             LogSkippedRows(job.SkippedRowFile, originalLines, skippedRows);
             LogErrors(job.ErrorLogFile, exceptions);

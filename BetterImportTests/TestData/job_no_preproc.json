@@ -15,13 +15,5 @@
       "Name": "Name",
       "DataFileIndex": 2
     }
-  ],
-  "Preprocessors": [
-    {
-      "DataFileIndex": 2,
-      "Pattern": "^\\d+\\.",
-      "ReplacementValue": ""
-    }
   ]
-
 }

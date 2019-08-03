@@ -17,11 +17,10 @@ namespace BetterImport.Models
         public string ErrorLogFile { get; private set; }
         public int StartRow { get; private set; }
 
-        public ReadOnlyCollection<ColumnMapping> Columns { get { return new ReadOnlyCollection<ColumnMapping>(columns); } }
-
-        private readonly List<ColumnMapping> columns = new List<ColumnMapping>();
-
-        public Job(string connectionString, string tableName, string dataFile, string valueSeparator, string skippedRowFile, string errorLogFile, int startRow, List<ColumnMapping> columns)
+        public ReadOnlyCollection<ColumnMapping> Columns { get; private set; }
+        public ReadOnlyCollection<Preprocessor> Preprocessors { get; private set; }
+        
+        public Job(string connectionString, string tableName, string dataFile, string valueSeparator, string skippedRowFile, string errorLogFile, int startRow, List<ColumnMapping> columns, List<Preprocessor> preprocessors = null)
         {
             ConnectionString = connectionString;
             TableName = tableName;
@@ -30,7 +29,16 @@ namespace BetterImport.Models
             SkippedRowFile = skippedRowFile;
             ErrorLogFile = errorLogFile;
             StartRow = startRow;
-            this.columns = columns;
+            Columns = new ReadOnlyCollection<ColumnMapping>(columns);
+            if (preprocessors == null)
+            {
+                Preprocessors = new ReadOnlyCollection<Preprocessor>(new List<Preprocessor>());
+            }
+            else
+            {
+                Preprocessors = new ReadOnlyCollection<Preprocessor>(preprocessors);
+            }
+            
         }
         
         public static Job LoadFromFile(string filepath, out Exception exception)
