@@ -1,0 +1,19 @@
+﻿{
+  "ConnectionString": "dummyConnString",
+  "TableName": "dummyTable",
+  "DataFile": "data.tsv",
+  "ValueSeparator": "\t",
+  "SkippedRowFile": "skippedrows.txt",
+  "ErrorLogFile": "errors.txt",
+  "StartRow": 2,
+  "Columns": [
+    {
+      "Name": "Id",
+      "DataFileIndex": 1
+    },
+    {
+      "Name": "Name",
+      "DataFileIndex": 2
+    }
+  ]
+}
