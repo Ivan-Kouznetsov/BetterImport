@@ -55,7 +55,7 @@ namespace BetterImport.DAO
                             if (values[row] != null)
                             {                                
                                 sqlCommand.CommandText = "insert into " +
-                                                         tableName + lockTable ?? " WITH (TABLOCKX) " +
+                                                         tableName + (lockTable ? " WITH (TABLOCKX) " : "") +
                                                          "(" + CreateColumnList(columnMappings) + ")" +
                                                          " values (" + CreateValuesList(columnMappings, values[row]) + ")";
                                 sqlCommand.ExecuteNonQuery();                             
@@ -94,7 +94,8 @@ namespace BetterImport.DAO
                     }
                 }
             }
-            
+
+
             skippedRows = new ReadOnlyCollection<int>(skippedRowsList);
             exceptions = new ReadOnlyCollection<Exception>(exceptionsList);
         }

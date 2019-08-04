@@ -18,7 +18,7 @@ namespace BetterImport
                       
             Stopwatch stopwatch = new Stopwatch();
 
-            if (args.Length != 1 || (args.Length == 2 && args[1] == "-lockTable"))
+            if (! (args.Length==1 || (args.Length == 2 && args[1] == "-lockTable")) )
             {
                 Console.WriteLine("Usage: BetterImport job.json [-lockTable]");
                 return;
