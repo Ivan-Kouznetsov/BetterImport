@@ -15,16 +15,22 @@ namespace BetterImport
         {
             Console.WriteLine("BetterImport (C)2019 Ivan Kouznetsov. AGPLv3. Read README.md for usage.");
             Console.WriteLine("Press Esc to pause.");
+                      
+            Stopwatch stopwatch = new Stopwatch();
 
-            const int batchSize = 1000;
-
-            if (args.Length != 1)
+            if (args.Length != 1 || (args.Length == 2 && args[1] == "-lockTable"))
             {
-                Console.WriteLine("Usage: BetterImport job.json");
+                Console.WriteLine("Usage: BetterImport job.json [-lockTable]");
                 return;
             }
 
             string jobFile = args[0];
+            bool lockTable = false;
+
+            if (args.Length == 2 && args[1] == "-lockTable")
+            {
+                lockTable = true;
+            }
 
             if (!File.Exists(jobFile))
             {
@@ -37,6 +43,12 @@ namespace BetterImport
             {
                 Console.WriteLine(jobFile + " has errors:");
                 Console.WriteLine(exception.Message);
+                return;
+            }
+
+            if (job.BatchSize < 1)
+            {
+                Console.WriteLine("BatchSize can't be less than 1.");
                 return;
             }
 
@@ -58,7 +70,7 @@ namespace BetterImport
                 return;
             }
 
-            FaultTolerantDAO faultTolerantDAO = new FaultTolerantDAO(job.ConnectionString);
+            FaultTolerantDAO faultTolerantDAO = new FaultTolerantDAO(job.ConnectionString, lockTable);
 
             if (!faultTolerantDAO.TestConfiguration(job.TableName, job.Columns, out Exception dbException))
             {
@@ -80,8 +92,8 @@ namespace BetterImport
                         
             Console.WriteLine("Started at " + DateTime.Now.ToLongTimeString());
             IEnumerator<string> dataFileEnumerator = File.ReadLines(job.DataFile).GetEnumerator();
-            string[][] values = new string[batchSize][];
-            string[] originalLines = new string[batchSize];
+            string[][] values = new string[job.BatchSize][];
+            string[] originalLines = new string[job.BatchSize];
             int rowCount;
 
             ReadOnlyCollection<int> skippedRows;
@@ -96,62 +108,75 @@ namespace BetterImport
            
             while (dataFileEnumerator.MoveNext())
             {
-                if (rowCount == batchSize)
+                if (dataFileEnumerator.Current != null)
                 {
-                    // Save batch
-                    SaveAndLog(faultTolerantDAO, job, values, originalLines, out skippedRows);
+                    if (rowCount == job.BatchSize)
+                    {
+                        // Save batch
+                        stopwatch.Restart();
+                        SaveAndLog(faultTolerantDAO, job, values, originalLines, out skippedRows);
+                        stopwatch.Stop();
 
-                    // Report progress
-                    ReportProgress(rowCount, skippedRows.Count);
+                        // Report progress
+                        ReportProgress(rowCount, skippedRows.Count, stopwatch.ElapsedMilliseconds);
 
-                    // Start new batch
-                    rowCount = 0;
-                    values = new string[batchSize][];
-                    originalLines = new string[batchSize];
+                        // Start new batch
+                        rowCount = 0;
+                        values = new string[job.BatchSize][];
+                        originalLines = new string[job.BatchSize];
+                    }
 
-                }
-                values[rowCount] = dataFileEnumerator.Current.Split(job.ValueSeparator);
-                originalLines[rowCount] = dataFileEnumerator.Current;
+                    values[rowCount] = dataFileEnumerator.Current.Split(job.ValueSeparator);
+                    originalLines[rowCount] = dataFileEnumerator.Current;
 
-                rowCount++;
+                    rowCount++;
 
-                if (Console.KeyAvailable)
-                {
-                    var consoleKey = Console.ReadKey(true);
-                    if (consoleKey.Key == ConsoleKey.Escape)
-                    {                       
-                        Console.WriteLine("Paused. Press any key to continue...");
-                        while (Console.ReadKey(true).Key == ConsoleKey.Escape) { }
+                    if (Console.KeyAvailable)
+                    {
+                        var consoleKey = Console.ReadKey(true);
+                        if (consoleKey.Key == ConsoleKey.Escape)
+                        {
+                            Console.WriteLine("Paused. Press any key to continue...");
+                            while (Console.ReadKey(true).Key == ConsoleKey.Escape) { }
+                        }
                     }
                 }
             }
 
             // Save last batch
+            stopwatch.Restart();
             SaveAndLog(faultTolerantDAO, job,values, originalLines, out skippedRows);
+            stopwatch.Stop();
 
             // Report progress
-            ReportProgress(rowCount, skippedRows.Count);
+            ReportProgress(rowCount, skippedRows.Count, stopwatch.ElapsedMilliseconds);
             
             Console.WriteLine("Finished at " + DateTime.Now.ToString());
         }
 
         private static void SaveAndLog(FaultTolerantDAO faultTolerantDAO, Job job,string[][] values, string[] originalLines, out ReadOnlyCollection<int> skippedRows)
         {
-            Preprocessor.BatchReplace(job.Preprocessors, ref values);
+            Preprocessor.BatchReplace(job.Preprocessors, ref values);          
             faultTolerantDAO.SaveBatch(job.TableName, job.Columns, values, out skippedRows, out ReadOnlyCollection<Exception> exceptions);
             LogSkippedRows(job.SkippedRowFile, originalLines, skippedRows);
             LogErrors(job.ErrorLogFile, exceptions);
         }
 
         static int progressSaved = 0;
-        static int progressSkipped = 0;
-
-        private static void ReportProgress(int batchSize, int skipped)
+        static int batchCount = 0;
+        static long totalProcessingTime = 0;
+        static long totalRecords = 0;
+        private static void ReportProgress(int batchSize, int skipped, long processingTime)
         {
             progressSaved += batchSize - skipped;
-            progressSkipped += skipped;
+            batchCount++;
+            totalProcessingTime += processingTime;
+            totalRecords += batchSize;
 
-            Console.WriteLine(DateTime.Now.ToString("HH:mm:ss.fff") + " Saved: " + progressSaved + " Skipped: " + progressSkipped);
+            Console.WriteLine("Saved: " + batchSize + " Skipped: " + skipped + " Total Saved: " + progressSaved);
+            Console.WriteLine("Processing Time: {0}ms", processingTime);
+           
+            Console.WriteLine("Average Records Per Second: " + Math.Round((float)totalRecords / totalProcessingTime * 1000).ToString());
         }
 
         private static void LogSkippedRows(string filepath, string[] originalLines, IList<int> skippedRows)

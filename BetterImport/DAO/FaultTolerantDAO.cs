@@ -5,15 +5,17 @@ using System.Text;
 using System.Data.SqlClient;
 using BetterImport.Models;
 
+using System.Diagnostics;
 namespace BetterImport.DAO
 {
     public class FaultTolerantDAO
     {
         private readonly string connectionString = "";
-
-        public FaultTolerantDAO(string connectionString)
+        private readonly bool lockTable = false;
+        public FaultTolerantDAO(string connectionString, bool lockTable)
         {
             this.connectionString = connectionString;
+            this.lockTable = lockTable;
         }
 
         public bool TestConfiguration(string tableName, IList<ColumnMapping> columnMappings, out Exception exception)
@@ -42,7 +44,7 @@ namespace BetterImport.DAO
         {
             using (SqlConnection sqlConnection = new SqlConnection(connectionString))
             {
-                sqlConnection.Open();
+                sqlConnection.Open();              
                 using (SqlCommand sqlCommand = new SqlCommand(string.Empty, sqlConnection))
                 using (sqlCommand.Transaction = sqlConnection.BeginTransaction())
                 {
@@ -51,12 +53,12 @@ namespace BetterImport.DAO
                         for (int row = 0; row < values.GetLength(0); row++)
                         {
                             if (values[row] != null)
-                            {
+                            {                                
                                 sqlCommand.CommandText = "insert into " +
-                                                         tableName +
+                                                         tableName + lockTable ?? " WITH (TABLOCKX) " +
                                                          "(" + CreateColumnList(columnMappings) + ")" +
                                                          " values (" + CreateValuesList(columnMappings, values[row]) + ")";
-                                sqlCommand.ExecuteNonQuery();
+                                sqlCommand.ExecuteNonQuery();                             
                             }
                         }
                         sqlCommand.Transaction.Commit();
@@ -68,7 +70,7 @@ namespace BetterImport.DAO
                     }
                 }
             }
-
+           
             exception = null;
             return true;
         }
@@ -92,7 +94,7 @@ namespace BetterImport.DAO
                     }
                 }
             }
-
+            
             skippedRows = new ReadOnlyCollection<int>(skippedRowsList);
             exceptions = new ReadOnlyCollection<Exception>(exceptionsList);
         }
@@ -120,18 +122,26 @@ namespace BetterImport.DAO
                     string currentValue = rawValues[columns[i].DataFileIndex - 1] // for 1-indexing
                                          .Replace("'", @"''"); // to escape single quotes
 
-                    if (int.TryParse(currentValue, out _) || currentValue == "NULL")
+                    if (int.TryParse(currentValue, out _))
                     {
                         values[i] = currentValue;
                     }
                     else if (IsUnicode(currentValue))
                     {
                         values[i] = "N'" + currentValue + "'";
-                    }                    
+                    }
+                    else if (currentValue == "NULL")
+                    {
+                        values[i] = "NULL";
+                    }
                     else
                     {
                         values[i] = "'" + currentValue + "'";
                     }
+                }
+                else
+                {
+                    values[i] = "NULL";
                 }
             }
 

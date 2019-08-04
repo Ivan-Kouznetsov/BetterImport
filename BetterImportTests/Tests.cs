@@ -10,7 +10,6 @@ namespace BetterImportTests
     [TestClass]
     public class Tests
     {
-
         const string TestData = "TestData";
 
         [TestMethod]

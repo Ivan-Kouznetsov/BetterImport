@@ -9,6 +9,7 @@ namespace BetterImport.Models
 {
     public class Job
     {
+        public int BatchSize { get; private set; }
         public string ConnectionString { get; private set; }
         public string TableName { get; private set; }
         public string DataFile { get; private set; }
@@ -20,8 +21,9 @@ namespace BetterImport.Models
         public ReadOnlyCollection<ColumnMapping> Columns { get; private set; }
         public ReadOnlyCollection<Preprocessor> Preprocessors { get; private set; }
         
-        public Job(string connectionString, string tableName, string dataFile, string valueSeparator, string skippedRowFile, string errorLogFile, int startRow, List<ColumnMapping> columns, List<Preprocessor> preprocessors = null)
+        public Job(string connectionString, string tableName, string dataFile, string valueSeparator, string skippedRowFile, string errorLogFile, int startRow, List<ColumnMapping> columns, List<Preprocessor> preprocessors = null, int batchsize = 1000)
         {
+            BatchSize = batchsize == 0 ? 1000 : batchsize;
             ConnectionString = connectionString;
             TableName = tableName;
             DataFile = dataFile;
@@ -38,7 +40,6 @@ namespace BetterImport.Models
             {
                 Preprocessors = new ReadOnlyCollection<Preprocessor>(preprocessors);
             }
-            
         }
         
         public static Job LoadFromFile(string filepath, out Exception exception)

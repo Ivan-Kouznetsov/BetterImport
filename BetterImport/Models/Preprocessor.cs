@@ -26,13 +26,16 @@ namespace BetterImport.Models
             if (preprocessors.Count == 0) return;
 
             for (int row = 0; row < values.Length; row++)
-            {   
-                for (int col = 0; col < values[row].Length; col++)
+            {
+                if (values[row] != null)
                 {
-                    for (int p = 0; p < preprocessors.Count; p++)
+                    for (int col = 0; col < values[row].Length; col++)
                     {
-                        // -1 for 1-indexing
-                        if ((preprocessors[p].DataFileIndex+-1)==col) values[row][col] = preprocessors[p].Replace(values[row][col]);
+                        for (int p = 0; p < preprocessors.Count; p++)
+                        {
+                            // -1 for 1-indexing
+                            if (values[row][col] != null && (preprocessors[p].DataFileIndex + -1) == col) values[row][col] = preprocessors[p].Replace(values[row][col]);
+                        }
                     }
                 }
             }
