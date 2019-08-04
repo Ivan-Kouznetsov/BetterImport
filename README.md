@@ -3,13 +3,13 @@
 Traditionally, importing from text files into SQL Server is done using the bulk copy program (bcp)
 an effective but rather limited and user-unfriendly program - skipping columns via bcp, for example,
 requires editing a text format file which is so fragile that bcp will error out if the format file does not end
-in an empty line. It also has no tolerance for bad data, which is virtually guaranteed when importing  
+in an empty line. It also has no tolerance for bad data, which is virtually guaranteed when importing 
 from large 3rd-party CSV or TSV files.
 
 BetterImport has a simple interface for mapping columns, uses JSON for configuration, skips and logs bad data, and can preprocess data before importing.
 # Usage
 
-dotnet BetterImport.dll job.json
+dotnet BetterImport.dll job.json [-lockTable]
 
 job.json format:  
 ```
@@ -29,8 +29,7 @@ job.json format:
     {
       "Name": "Text",
       "DataFileIndex": 3
-    }
-	,
+    },
     {
       "Name": "Number",
       "DataFileIndex": 5
@@ -61,7 +60,7 @@ add the following to the job.json file:
   ]
 ```
 
-Note that \ has to be escaped so \d becomes \\d.
+Note that \ has to be escaped so in this example \d becomes \\\d.
 
 The complete file could look like this:
 
@@ -83,18 +82,15 @@ The complete file could look like this:
     {
       "Name": "ClaimText",
       "DataFileIndex": 3
-    }
-	,
+    },
     {
       "Name": "DependentIdList",
       "DataFileIndex": 4
-    }
-	,
+    },
     {
       "Name": "ClaimNumber",
       "DataFileIndex": 5
-    }
-	,
+    },
     {
       "Name": "IsExemplary",
       "DataFileIndex": 6
